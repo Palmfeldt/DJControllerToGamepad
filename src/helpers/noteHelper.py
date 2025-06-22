@@ -24,11 +24,19 @@ class noteHelper:
             63: (vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_THUMB, vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_THUMB),
             12: (vg.XUSB_BUTTON.XUSB_GAMEPAD_LEFT_SHOULDER, vg.XUSB_BUTTON.XUSB_GAMEPAD_RIGHT_SHOULDER)
         }
+                
+        self._direction_map = {
+                1: ('_leftJoyUp',    'Up',    (0, 32767)),
+                5: ('_leftJoyDown',  'Down',  (0, -32767)),
+                4: ('_leftJoyLeft',  'Left',  (-32767, 0)),
+                6: ('_leftJoyRight', 'Right', (32767, 0)),
+            }
+
     
     def noteOnMap(self, midiMsg):
         #Bring to Joystick Handler
         if(midiMsg.note in self.leftJoystickNotes):
-            self.__leftJoystickHandler(midiMsg)
+            self.__buttonHandler(midiMsg)
         if(midiMsg.note in self.__noteMappings and not ((midiMsg.note == 54 and midiMsg.channel == 0) or (midiMsg.note == 54 and midiMsg.channel == 1))): #Extra note logic here to avoid collision with deck spinner
             self.__noteToButton(midiMsg.note, midiMsg.velocity)
         if(midiMsg.note in self.__noteAndChannelMappings):
@@ -49,46 +57,27 @@ class noteHelper:
         if(velocity == 0):
             self._gamepad.release_button(button = button)
             print(f"Release: {button=}")
+    
 
-    def __leftJoystickHandler(self, midiMsg):
-        # LEFT JOYSTICK
-        # Up
-        if(midiMsg.note == 1 and midiMsg.velocity == 127):
-            self._leftJoyUp = True
-            print("Left Joystick Up press")
-        if(midiMsg.note == 1 and midiMsg.velocity == 0):
-            self._leftJoyUp = False
-            print("Left Joystick Up release")
-        #Down
-        if(midiMsg.note == 5 and midiMsg.velocity == 127):
-            self._leftJoyDown = True
-            print("Left Joystick Down press")
-        if(midiMsg.note == 5 and midiMsg.velocity == 0):
-            self._leftJoyDown = False
-            print("Left Joystick Down release")
-        #Left
-        if(midiMsg.note == 4 and midiMsg.velocity == 127):
-            self._leftJoyLeft = True
-            print("Left Joystick Left press")
-        if(midiMsg.note == 4 and midiMsg.velocity == 0):
-            self._leftJoyLeft = False
-            print("Left Joystick Left release")
-        #Right
-        if(midiMsg.note == 6 and midiMsg.velocity == 127):
-            self._leftJoyRight = True
-            print("Left Joystick Right press")
-        if(midiMsg.note == 6 and midiMsg.velocity == 0):
-            self._leftJoyRight = False
-            print("Left Joystick Right release")
-        
+    # Button press handler
+    def __buttonHandler(self, midiMsg):
+        # Map notes to direction attributes and axis values
+        if midiMsg.note in self._direction_map:
+            attr, name, _ = self._direction_map[midiMsg.note]
+            pressed = midiMsg.velocity == 127
+            setattr(self, attr, pressed)
+            action = "press" if pressed else "release"
+            print(f"Left Button {name} {action}")
+
+        # Calculate joystick position
         x = 0
         y = 0
-        if(self._leftJoyUp):
+        if self._leftJoyUp:
             y += 32767
-        if(self._leftJoyDown):
+        if self._leftJoyDown:
             y -= 32767
-        if(self._leftJoyRight):
+        if self._leftJoyRight:
             x += 32767
-        if(self._leftJoyLeft):
+        if self._leftJoyLeft:
             x -= 32767
         self._gamepad.left_joystick(x_value=x, y_value=y)

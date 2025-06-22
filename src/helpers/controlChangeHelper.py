@@ -12,29 +12,40 @@ class controlChangeHelper:
             self._gamepad.left_trigger(leftTriggerVal)
             print(f"Left trigger val: {leftTriggerVal}")
         #Right Trigger
-        if (midiMsg.channel==3 and midiMsg.control == 19):
+        elif (midiMsg.channel==3 and midiMsg.control == 19):
             rightTriggerVal = self.__convertSliderTo255(midiMsg.value)
             self._gamepad.right_trigger(rightTriggerVal)
             print(f"Right trigger val: {rightTriggerVal}")
         #Right Joystick
         if(midiMsg.control in set([34, 33])):
-            self.__rightJoystickHandler(midiMsg)
-        
-    def __rightJoystickHandler(self, midiMsg):
-        if (midiMsg.channel == 0):
+            self.__joystickHandler(midiMsg)
+
+
+    # This function converts the MIDI control change messages for the right joystick
+    # of the xbox controller.
+    def __joystickHandler(self, midiMsg):
+        spinnerChannel = midiMsg.channel
+
+        if spinnerChannel == 0:
             self.leftJoyY = midiMsg.value
-        if (midiMsg.channel == 1):
+        if spinnerChannel == 1:
             self.rightJoyX = midiMsg.value
 
-        x= self.__convertSpinnerValues(self.rightJoyX)
-        y= self.__convertSpinnerValues(self.leftJoyY)
+        x = self.__convertSpinnerValues(self.rightJoyX)
+        y = self.__convertSpinnerValues(self.leftJoyY)
 
-        if (self.leftJoyY in self.deadzones):
+        if self.leftJoyY in self.deadzones:
             y = 0
-        if(self.rightJoyX in self.deadzones):
+        if self.rightJoyX in self.deadzones:
             x = 0
 
-        print(f"Right Joystick Movement: x={x} y={y} ")
+        # Print which joystick is being moved
+        if spinnerChannel == 1:
+            print(f"Right Joystick Movement: x={x} y={y}")
+        elif spinnerChannel == 0:
+            print(f"Left Joystick Movement: x={x} y={y}")
+
+        # Only call once
         self._gamepad.right_joystick(x_value=x, y_value=y)
 
 
